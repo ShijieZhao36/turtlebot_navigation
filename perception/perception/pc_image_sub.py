@@ -1,12 +1,3 @@
-
-
-#####################MyCode#############
-
-# Bare Bones Code to View the Image Published from the Turtlebot3 on a Remote Computer
-# Intro to Robotics Research 7785
-# Georgia Institute of Technology
-# Sean Wilson, 2022
-
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
@@ -20,15 +11,15 @@ from cv_bridge import CvBridge
 
 from perception import Detection
 
-class MinimalVideoSubscriber(Node):
+class PCImageSubscriber(Node):
 
     def __init__(self):
         # Creates the node.
-        super().__init__('minimal_video_subscriber')
+        super().__init__('pc_image_subscriber')
 
         # Set Parameters
-        self.declare_parameter('show_image_bool', False)
-        self.declare_parameter('window_name', "Processed Image")
+        self.declare_parameter('show_image_bool', True)
+        self.declare_parameter('window_name', "Raw Image")
 
         # Determine Window Showing Based on Input
         self._display_image = bool(self.get_parameter('show_image_bool').value)
@@ -50,24 +41,17 @@ class MinimalVideoSubscriber(Node):
         # Declare that the minimal_video_subscriber node is subcribing to the /camera/image/compressed topic.
         self._video_subscriber = self.create_subscription(
             CompressedImage,
-            '/image_raw/compressed',
+            'pc_image',
             self._image_callback,
             image_qos_profile)
         self._video_subscriber  # Prevents unused variable warning.
 
-        self._video_publisher_ = self.create_publisher(CompressedImage, 'pc_image', 10)
-
-
     def _image_callback(self, CompressedImage):
         # The "CompressedImage" is transformed to a color image in BGR space and is store in "_imgBGR"
         self._imgBGR = CvBridge().compressed_imgmsg_to_cv2(CompressedImage, "bgr8")
-        detect = Detection()
-        self.processed_img = detect.process_frame(self._imgBGR)
         if (self._display_image):
             # Display the image in a window
-            self.show_image(self.processed_img)
-        imgROS = CvBridge().cv2_to_compressed_imgmsg(self.processed_img)
-        self._video_publisher_.publish(imgROS)
+            self.show_image(self._imgBGR)
 
     def get_image(self):
         return self._imgBGR
@@ -82,17 +66,20 @@ class MinimalVideoSubscriber(Node):
         if self.get_user_input() == ord('q'):
             cv2.destroyAllWindows()
             raise SystemExit
+    # def get_processed_frame(self):
+    #     return self.processed_img
+
 
 def main():
     rclpy.init()  # init routine needed for ROS2.
-    video_subscriber = MinimalVideoSubscriber()  # Create class object to be used.
+    pc_subscriber = PCImageSubscriber()  # Create class object to be used.
 
     try:
-        rclpy.spin(video_subscriber)  # Trigger callback processing.
+        rclpy.spin(pc_subscriber)  # Trigger callback processing.
     except SystemExit:
         rclpy.logging.get_logger("Camera Viewer Node Info...").info("Shutting Donw")
     # Clean up and shutdown.
-    video_subscriber.destroy_node()
+    pc_subscriber.destroy_node()
     rclpy.shutdown()
 
 

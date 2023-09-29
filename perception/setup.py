@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'find_object = perception.find_object:main'
+            'find_object = perception.find_object:main',
+            'pc_image_sub = perception.pc_image_sub:main'
         ],
     },
 )
