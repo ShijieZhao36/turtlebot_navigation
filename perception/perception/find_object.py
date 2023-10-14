@@ -1,24 +1,17 @@
-
-
-#####################MyCode#############
-
-# Bare Bones Code to View the Image Published from the Turtlebot3 on a Remote Computer
-# Intro to Robotics Research 7785
-# Georgia Institute of Technology
-# Sean Wilson, 2022
+## Shijie Zhao, Fukang Liu
 
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import UInt16MultiArray
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy
-
-import sys
 
 import numpy as np
 import cv2
 from cv_bridge import CvBridge
 
 from perception import Detection
+
 
 class MinimalVideoSubscriber(Node):
 
@@ -56,18 +49,24 @@ class MinimalVideoSubscriber(Node):
         self._video_subscriber  # Prevents unused variable warning.
 
         self._video_publisher_ = self.create_publisher(CompressedImage, 'pc_image', 10)
+        self._coord_publisher_ = self.create_publisher(UInt16MultiArray,'center_coordination', 10)
+
 
 
     def _image_callback(self, CompressedImage):
         # The "CompressedImage" is transformed to a color image in BGR space and is store in "_imgBGR"
         self._imgBGR = CvBridge().compressed_imgmsg_to_cv2(CompressedImage, "bgr8")
         detect = Detection()
-        self.processed_img = detect.process_frame(self._imgBGR)
+        self.processed_img,center = detect.process_frame(self._imgBGR)
         if (self._display_image):
             # Display the image in a window
             self.show_image(self.processed_img)
         imgROS = CvBridge().cv2_to_compressed_imgmsg(self.processed_img)
         self._video_publisher_.publish(imgROS)
+        center_msg = UInt16MultiArray()
+        center_msg.data = center
+        self._coord_publisher_.publish(center_msg)
+
 
     def get_image(self):
         return self._imgBGR

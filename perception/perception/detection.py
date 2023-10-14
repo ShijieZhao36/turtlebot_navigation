@@ -6,14 +6,13 @@ class Detection:
     def process_frame(self,image):
         Width = image.shape[1]
         Height = image.shape[0]
+        #print('shape',image.shape)
         scale = 0.00392
 
         classes = None
-
-        print(os.listdir('.'))
-        class_file = 'src/yolov/yolov3.txt'
-        weights = 'src/yolov/yolo-fastest-1.1-xl.weights'
-        config = 'src/yolov/yolo-fastest-1.1-xl.cfg'
+        class_file = 'src/perception/yolov/yolov3.txt'
+        weights = 'src/perception/yolov/yolo-fastest-1.1-xl.weights'
+        config = 'src/perception/yolov/yolo-fastest-1.1-xl.cfg'
 
         with open(class_file, 'r') as f:
             classes = [line.strip() for line in f.readlines()]
@@ -34,6 +33,8 @@ class Detection:
         conf_threshold = 0.5
         nms_threshold = 0.4
 
+        max_confidence = 0
+        center = [160,120]
 
         for out in outs:
             for detection in out:
@@ -50,8 +51,10 @@ class Detection:
                     y = center_y - h / 2
                     class_ids.append(class_id)
                     confidences.append(float(confidence))
-                    print(center_x,center_y)
                     boxes.append([x, y, w, h])
+                    if confidence > max_confidence:
+                        center =[center_x,center_y]
+                        max_confidence  = confidence
 
 
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
@@ -67,10 +70,12 @@ class Detection:
             y = box[1]
             w = box[2]
             h = box[3]
-            label = str(classes[class_ids[i]])
+            confidence = confidences[i]
+            label = '{},{}'.format(classes[class_ids[i]],confidence)
+            # label = str(classes[class_ids[i]])+str(confidence)
             color = COLORS[class_ids[i]]
             self.draw_prediction(image, label, color, round(x), round(y), round(x+w), round(y+h))
-        return image
+        return image,center
     
     def get_output_layers(self,net):
     
